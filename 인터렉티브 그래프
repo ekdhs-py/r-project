@@ -1,0 +1,68 @@
+' 인터렉티브 그래프
+  : 마우스 움직임에 반응해서 실시간으로 형태가 변하는 그래프
+  -> 그래프를 HTML 포맷으로 저장하면 일반 사용자들도 웹 브라우저를 이용해서 자유롭게 조작하면서 살펴볼 수 있음.
+'
+install.packages('plotly') # 동적 인터랙티브 시각화
+library(plotly)
+
+# 배기량과 고속도로 연비 산점도
+p <- ggplot(data = mpg, aes(x=displ, y=hwy, col=drv)) + geom_point()
+ggplotly(p)
+' 해석
+  - 배기량이 높을수록 고속도로 연비가 떨어짐,
+  - 전륜구동(f)이 배기량은 낮고 고속도로 연비가 높은 편이고 사륜구동이 대체적으로 고속도로 연비가 낮은 편임.
+'
+
+# 인터렉티브 막대 그래프 - 컷팅품질에 따른 투명도의 분포
+' 변수 소개 
+  - cut : 절단면 품질
+  - color : 색상
+  - clarity : 투명도
+  - carat : 다이아몬드의 무게'
+p <- ggplot(data = diamonds, aes(x=cut, fill=clarity)) +
+  geom_bar(position = "dodge")
+ggplotly(p)
+' 해석
+  - cut 등급별 다이아몬드 개수 파악 -> Ideal 컷으로 갈수록 다이아몬드가 가장 많음.
+  - clarity 분포 비교 -> Ideal컷 내에서는 SI1투명도가 가장 많고, I1이 가장 적음.
+  - cut과 clarity사이의 상관관계 -> cut등급이 높을수록 clarity도 높은 등급이 많음.
+'
+
+# dygraphs 패키지로 인터랙티브 시계열 그래프 생성
+install.packages('dygraphs')
+library(dygraphs)
+
+# ggplot2의 economics데이터셋 불러오기
+economics <- ggplot2::economics
+head(economics)
+' 해당 패키지를 사용해서 시계열 그래프를 만들려면 데이터가 시간순서의 속성을 지니는 xts데이터 타입이어야 함.'
+
+## 데이터타입 변경 - xts()
+library(xts)
+eco <- xts(economics$unemploy, order.by = economics$date) # eco : 시간 순서가 있는 실업자 수 시계열 데이터  
+
+## 시간에 따른 미국의 실업자 수 변화 그래프
+dygraph(eco)
+' 해석
+  - 실업자수는 2008년부터 급증하다 2010년에 15325명으로 가장 많았고 이후 점진적으로 감소하는 것으로 보임. 
+'
+
+### 날짜 범위 선택 기능 추가 - dyRangeSelector()
+dygraph(eco) %>% dyRangeSelector()
+
+### 여러 값 표시하기 - psavert : 개인 저축률
+eco_a <- xts(economics$psavert, order.by = economics$date)
+eco_b <- xts(economics$unemploy/1000, order.by = economics$date) ##실업자수를 1000으로 나눠 백만명으로 변환
+
+### cbind()를 사용해서 가로로 결합 후 변수명 수정
+eco2 <- cbind(eco_a, eco_b) # 열방향 데이터 결합
+colnames(eco2) <- c("psavert", "unemploy") # 변수명 수정
+head(eco2)
+
+### 개인 저축률과 실업자수 사이의 관계
+dygraph(eco2) %>% dyRangeSelector()
+' 해석
+  - 2008년 경제위기로 실업자수가 급격히 증가할 때 개인 저축률도 같이 증가하는 경향을 보임.
+  - 개인 저축률은 장기적으로 완만한 하락 추세를 보임 -> 소득대비 저축비중이 감소 , 변동이 비교적 적고 점진적임
+  - 실업자수는 경기 사이클에 따라 급격한 상하강이 빈번함 -> 경기 침체기마다 급등, 회복기에 감소
+'
