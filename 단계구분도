@@ -1,0 +1,97 @@
+' 지도 시각화 '
+
+' 단계 구분도
+  : 지역별 통계치를 색깔의 차이로 표현한 지도 
+'
+
+# 패키지 로드
+install.packages("ggiraphExtra") #단계구분도
+library(ggiraphExtra)
+
+# 미국 주별 범죄 데이터 로드
+'USArrests Data 
+  : R에 기본적으로 내장되어 었는 1970년도 미국 주별 강력 범죄율 정보를 담고 있는 데이터  
+'
+str(USArrests)
+head(USArrests) ## 데이터프레임 형태가 아님
+'tibble 패키지의 rownames_to_column()를 이용해서 행 이름을 state 변수로 바꿔 새로운 데이터프레임 생성'
+library(tibble)
+crime <- rownames_to_column(USArrests, var = 'state')
+crime$state <- tolower(crime$state) # tolower() : 소문자 변환 함수
+str(crime) ## state 변수 생성됨
+
+'
+단계 구분도를 만드려면 위도, 경도 정보가 있는 지도 데이터가 필요
+ - maps 패키지의 미국 주별 위경도를 나타낸 state 데이터
+  -> 해당 데이터를 ggplot2의 map_Data() 함수를 써서 DF형태로 가져오기   
+'
+library(ggplot2)
+# 미국 주 지도 데이터 로드
+states_map <- map_data('state')
+str(states_map)
+
+# 단계 구분도 생성 - 지역별 범죄율
+ggChoropleth(data = crime, # 지도에 표현할 데이터
+             aes(fill = Murder, # 색깔로 표현할 변수
+                 map_id = state), # 지역 기준 변수
+             map = states_map) # 지도 데이터
+
+# 인터렉티브 단계 구분도 생성
+ggChoropleth(data = crime,
+             aes(fill = Murder,
+                 map_id = state),
+             map = states_map,
+             interactive = T) # 인터렉티브 여부
+' 해석
+  - 조지아 지역이 17.4로 범죄율이 가장 높은 지역임
+  - 전체적으로 밑지방 주들이 범죄율이 높음
+'
+
+' 대한민국 시도별 인구, 결핵환자 수 단계 구분도 '
+install.packages('stringi') #빠른 문자열 처리 기능
+install.packages('devtools') #R패키지 개발을 더 쉽게 만들어주는 도구
+devtools::install_github('cardiomoon/kormaps2014')
+'kormaps2014 패키지 : 대한민국의 지역 통계 데이터와 지도 데이터를 사용하게 해줌'
+library(kormaps2014)
+
+# 데이터 로드
+' korpop1 : 2015년 센서스 데이터(시도별)
+  korpop2 : 2015년 센서스 데이터(시군구별)
+  korpop3 : 2015년 센서스 데이터(읍면동별)
+'
+str(korpop1)
+
+# 변수명 수정
+library(dplyr)
+korpop1 <- rename(korpop1,
+                  pop = 총인구_명,
+                  name = 행정구역별_읍면동)
+str(korpop1)
+
+# 대한민국 시도 지도 데이터 로드
+str(kormap1)
+
+# 단계 구분도 생성
+ggChoropleth(data = korpop1, # 지도에 표현할 데이터
+             aes(fill = pop, # 색깔로 표현할 변수
+                 map_id = code, # 지역 기준 변수
+                 tooltip = name), # 지도 위에 표시할 지역명
+             map = kormap1, # 지도 데이터
+             interactive = T) # 인터렉티브 여부
+' 해석
+  - 경기도에 12,479,061명으로 인구가 가장 많이 분포되어 있고, 그 뒤 서울이 9,904,312명으로 두번째로 많이 분포되어 있는 걸로 보아
+  수도권에 인구가 몰려있는 것을 알 수 있음.'
+
+# 결핵 환자 수 단계 구분도
+'tbc 데이터 : 지역별 결핵 환자 수 데이터 -> NewPts(결핵 환자 수) 변수 사용'
+str(tbc)
+ggChoropleth(data = tbc,
+             aes(fill = NewPts,
+                 map_id = code,
+                 tooltip = name),
+             map = kormap1,
+             interactive = T)
+' 해석
+  - 서울에 11,178명으로 결핵환자가 가장 많이 몰려있고 경기도에 4,843명으로 두번째로 많음.
+  - 지역별 인구수와 거의 유사한 분포이지만 서울과 경기가 반대
+'
